@@ -12,6 +12,8 @@
 
 - For R package installation in this environment, prefer using the bash commands `install2.r --error` and `installGithub.r` rather than `install.packages()` directly in R.
 
+- Before requesting any PR review involving devcontainer changes, you must ensure that the container image can be built successfully and can run properly. Test this by building the container locally with `docker build -f .devcontainer/Containerfile -t test-container .` and verifying it runs with basic commands like `docker run --rm test-container python --version` and `docker run --rm test-container R --version`.
+
 
 ## Examples
 

@@ -15,7 +15,7 @@ classifiers = [
     "License :: OSI Approved :: MIT License",
     "Operating System :: OS Independent",
     "Programming Language :: Python :: 3",
-    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
     "Topic :: Scientific/Engineering",
     "Topic :: Scientific/Engineering :: Medical Science Apps."
 ]
@@ -47,10 +47,10 @@ build-backend = "hatchling.build"
 
 [tool.black]
 line-length = 88
-target-version = ['py311']
+target-version = ['py312']
 
 [tool.ruff]
-target-version = "py311"
+target-version = "py312"
 line-length = 88
 select = [
     "E",  # pycodestyle errors

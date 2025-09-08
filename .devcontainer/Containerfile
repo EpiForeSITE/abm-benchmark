@@ -7,29 +7,15 @@ RUN apt-get update && apt-get install -y \
     git \
     sudo \
     software-properties-common \
+    python3-pip \
+    python3-venv \
     && rm -rf /var/lib/apt/lists/*
 
-# Install UV for Python package management
-RUN curl -LsSf https://astral.sh/uv/install.sh | sh
-ENV PATH="/root/.cargo/bin:$PATH"
-
-# Install Python 3.11
-RUN add-apt-repository ppa:deadsnakes/ppa && \
-    apt-get update && \
-    apt-get install -y python3.11 python3.11-venv python3.11-dev && \
-    rm -rf /var/lib/apt/lists/*
-
-# Make Python 3.11 available as python
-RUN ln -sf /usr/bin/python3.11 /usr/bin/python
+# Make Python 3.12 (already available) available as python
+RUN ln -sf /usr/bin/python3 /usr/bin/python
 
 # Note: Quarto is already included in the rocker/tidyverse image
-
-# Copy the pyproject.toml and install Python dependencies using UV
-RUN mkdir -p /tmp/python_setup
-COPY pyproject.toml /tmp/python_setup/pyproject.toml
-WORKDIR /tmp/python_setup
-RUN /root/.cargo/bin/uv venv /opt/python/cp311 && \
-    /root/.cargo/bin/uv pip install --python /opt/python/cp311/bin/python -e .
+# UV and Python packages will be installed as needed by individual projects or during container runtime
 
 # Set up the workspace
 WORKDIR /workspaces
