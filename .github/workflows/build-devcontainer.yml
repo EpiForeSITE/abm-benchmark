@@ -44,16 +44,30 @@ jobs:
         images: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}
         tags: |
           type=ref,event=branch
-          type=ref,event=pr
-          type=sha,prefix={{branch}}-
           type=raw,value=latest,enable={{is_default_branch}}
+        labels: |
+          org.opencontainers.image.title={{.Repository}}
+          org.opencontainers.image.description=Devcontainer for ABM benchmark examples
+          org.opencontainers.image.source={{.RepositoryURL}}
 
-    - name: Build and push Docker image
+    - name: Build Docker image
+      if: github.event_name == 'pull_request'
       uses: docker/build-push-action@v5
       with:
         context: .
         file: .devcontainer/Containerfile
-        push: ${{ github.event_name != 'pull_request' }}
+        push: false
+        tags: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:pr-test
+        cache-from: type=gha
+        cache-to: type=gha,mode=max
+
+    - name: Build and push Docker image
+      if: github.event_name != 'pull_request'
+      uses: docker/build-push-action@v5
+      with:
+        context: .
+        file: .devcontainer/Containerfile
+        push: true
         tags: ${{ steps.meta.outputs.tags }}
         labels: ${{ steps.meta.outputs.labels }}
         cache-from: type=gha
