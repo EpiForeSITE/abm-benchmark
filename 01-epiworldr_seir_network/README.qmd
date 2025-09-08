@@ -1,0 +1,209 @@
+---
+title: "SEIR Network Model using epiworldR"
+author: "EpiForeSITE Team"
+date: "2024-09-08"
+issue: "4"
+format: 
+  gfm:
+    toc: true
+---
+
+## Introduction
+
+This example demonstrates a **Susceptible-Exposed-Infected-Recovered (SEIR)** epidemiological model implemented using the `epiworldR` package in R. The model simulates disease transmission on a small-world network, capturing the realistic contact patterns observed in human populations.
+
+The SEIR model extends the classic SIR model by including an exposed (latent) compartment, making it particularly suitable for diseases with an incubation period, such as influenza, COVID-19, or measles.
+
+## Model Description
+
+### Mathematical Framework
+
+The SEIR model divides the population into four compartments:
+
+- **S(t)**: Susceptible individuals at time t
+- **E(t)**: Exposed (infected but not yet infectious) individuals at time t  
+- **I(t)**: Infectious individuals at time t
+- **R(t)**: Recovered (immune) individuals at time t
+
+The system follows these transitions:
+$$S \rightarrow E \rightarrow I \rightarrow R$$
+
+With rates:
+- **Infection rate (β)**: Rate at which susceptible individuals become exposed through contact with infectious individuals
+- **Progression rate (σ)**: Rate at which exposed individuals become infectious (1/incubation period)
+- **Recovery rate (γ)**: Rate at which infectious individuals recover (1/infectious period)
+
+### Model Characteristics
+
+- **Model Type**: Network-based model
+- **Time Structure**: Discrete time simulation
+- **Population Structure**: Small-world network topology
+- **Transmission**: Through network edges (contacts)
+
+### Network Structure
+
+- **Population Size**: 10,000 individuals
+- **Network Type**: Small-world network
+- **Average Degree**: 20 connections per individual
+- **Target Basic Reproduction Number (R₀)**: ≈ 2.0
+
+## Implementation
+
+```{r setup, message=FALSE, warning=FALSE}
+# Load required libraries
+library(epiworldR)
+library(ggplot2)
+library(dplyr)
+
+# Set seed for reproducibility
+set.seed(42)
+```
+
+```{r model-setup}
+# Model parameters
+n_population <- 10000
+avg_degree <- 20
+simulation_days <- 100
+initial_infected <- 1
+
+# SEIR model parameters
+# For R0 ≈ 2, with average degree 20, we need β ≈ R0/(degree * infectious_period)
+infectious_period <- 7  # days
+incubation_period <- 5  # days
+recovery_rate <- 1/infectious_period
+progression_rate <- 1/incubation_period
+target_r0 <- 2.0
+transmission_prob <- target_r0 / (avg_degree * infectious_period)
+
+message("Population size: ", n_population)
+message("Average degree: ", avg_degree)
+message("Transmission probability: ", round(transmission_prob, 4))
+message("Progression rate (σ): ", round(progression_rate, 4))
+message("Recovery rate (γ): ", round(recovery_rate, 4))
+```
+
+```{r timing-start}
+# Start timing
+start_time <- Sys.time()
+```
+
+```{r model-creation}
+# Create SEIR model using epiworldR
+model <- ModelSEIR(
+  name = "SEIR Network Model",
+  prevalence = initial_infected / n_population,
+  transmission_rate = transmission_prob,
+  incubation_days = incubation_period,
+  recovery_rate = recovery_rate
+)
+
+# Create small-world network
+small_world_net <- sample_smallworld(
+  size = n_population,
+  nei = avg_degree / 2,
+  p = 0.1
+)
+
+# Add the network to the model
+model <- add_network(model, small_world_net)
+agents_from_network(model, small_world_net)
+
+# Run the simulation
+run(model, ndays = simulation_days)
+```
+
+```{r timing-end}
+# End timing
+end_time <- Sys.time()
+execution_time <- end_time - start_time
+message("Execution time: ", round(execution_time, 2), " seconds")
+```
+
+```{r results-summary}
+# Get simulation results from epiworldR
+summary(model)
+epi_data <- plot(model)$data
+
+# Calculate final attack rate
+final_data <- tail(epi_data, 1)
+attack_rate <- (final_data$Recovered + final_data$Infected) / n_population * 100
+
+message("Final attack rate: ", round(attack_rate, 1), "%")
+message("Peak infections: ", max(epi_data$Infected))
+message("Peak day: ", which.max(epi_data$Infected))
+```
+
+```{r visualization}
+# Create epidemic curves visualization
+p1 <- ggplot(epi_data, aes(x = Date)) +
+  geom_line(aes(y = Susceptible, color = "Susceptible"), linewidth = 1) +
+  geom_line(aes(y = Exposed, color = "Exposed"), linewidth = 1) +
+  geom_line(aes(y = Infected, color = "Infected"), linewidth = 1) +
+  geom_line(aes(y = Recovered, color = "Recovered"), linewidth = 1) +
+  scale_color_manual(
+    name = "Compartment",
+    values = c("Susceptible" = "#2E86AB", "Exposed" = "#A23B72", 
+               "Infected" = "#F18F01", "Recovered" = "#C73E1D")
+  ) +
+  labs(
+    title = "SEIR Model Epidemic Curves",
+    subtitle = paste0("Small-world network (N=", format(n_population, big.mark = ","), 
+                     ", avg degree=", avg_degree, ", R₀≈", target_r0, ")"),
+    x = "Time (days)",
+    y = "Number of individuals"
+  ) +
+  theme_minimal() +
+  theme(
+    legend.position = "bottom",
+    plot.title = element_text(size = 14, face = "bold"),
+    plot.subtitle = element_text(size = 12),
+    axis.title = element_text(size = 11),
+    legend.title = element_text(size = 10, face = "bold")
+  )
+
+print(p1)
+
+# Create a focused view of active cases (Exposed + Infected)
+p2 <- ggplot(epi_data, aes(x = Date)) +
+  geom_area(aes(y = Exposed), fill = "#A23B72", alpha = 0.7) +
+  geom_area(aes(y = Infected), fill = "#F18F01", alpha = 0.8) +
+  labs(
+    title = "Active Cases Over Time",
+    subtitle = "Exposed (incubating) and Infected (infectious) individuals",
+    x = "Time (days)",
+    y = "Number of active cases"
+  ) +
+  theme_minimal() +
+  theme(
+    plot.title = element_text(size = 14, face = "bold"),
+    plot.subtitle = element_text(size = 12),
+    axis.title = element_text(size = 11)
+  )
+
+print(p2)
+```
+
+## Results Summary
+
+The simulation demonstrates a typical SEIR epidemic curve on a small-world network:
+
+1. **Initial Growth**: Exponential growth phase as the disease spreads through the network
+2. **Peak**: Maximum number of infectious individuals occurs around day `r which.max(epi_data$Infected)`
+3. **Decline**: Decreasing transmission as susceptible population depletes
+4. **Final Size**: Attack rate of `r round(attack_rate, 1)`% of the population
+
+The small-world network structure creates realistic clustering and path lengths, leading to epidemic dynamics that better represent real-world disease transmission compared to random mixing models.
+
+## Performance
+
+- **Execution time**: `r round(execution_time, 2)` seconds
+- **Population size**: `r format(n_population, big.mark = ",")` agents
+- **Network edges**: Approximately `r format(n_population * avg_degree / 2, big.mark = ",")` connections
+- **Simulation days**: `r simulation_days` days
+
+## References
+
+1. **epiworldR Package**: [https://github.com/UofUEpiBio/epiworldR](https://github.com/UofUEpiBio/epiworldR)
+2. **Package Documentation**: Available through `help(package = "epiworldR")` in R
+3. **SEIR Model Theory**: Keeling, M. J., & Rohani, P. (2011). Modeling infectious diseases in humans and animals. Princeton University Press.
+4. **Small-World Networks**: Watts, D. J., & Strogatz, S. H. (1998). Collective dynamics of 'small-world' networks. Nature, 393(6684), 440-442.
