@@ -1,0 +1,47 @@
+FROM rocker/tidyverse:4.5.0
+
+# Install system dependencies
+RUN apt-get update && apt-get install -y \
+    curl \
+    wget \
+    git \
+    sudo \
+    software-properties-common \
+    && rm -rf /var/lib/apt/lists/*
+
+# Install UV for Python package management
+RUN curl -LsSf https://astral.sh/uv/install.sh | sh
+ENV PATH="/root/.cargo/bin:$PATH"
+
+# Install Python 3.11
+RUN add-apt-repository ppa:deadsnakes/ppa && \
+    apt-get update && \
+    apt-get install -y python3.11 python3.11-venv python3.11-dev && \
+    rm -rf /var/lib/apt/lists/*
+
+# Make Python 3.11 available as python
+RUN ln -sf /usr/bin/python3.11 /usr/bin/python
+
+# Install Quarto
+RUN curl -LO https://github.com/quarto-dev/quarto-cli/releases/download/v1.4.550/quarto-1.4.550-linux-amd64.deb && \
+    dpkg -i quarto-1.4.550-linux-amd64.deb && \
+    rm quarto-1.4.550-linux-amd64.deb
+
+# Install essential R packages for epidemiological modeling
+RUN R -e "install.packages(c('devtools', 'remotes', 'here', 'targets', 'tarchetypes', 'visNetwork', 'DT', 'plotly'), repos='https://cran.rstudio.com/')"
+
+# Copy the pyproject.toml and install Python dependencies using UV
+RUN mkdir -p /tmp/python_setup
+COPY pyproject.toml /tmp/python_setup/pyproject.toml
+WORKDIR /tmp/python_setup
+RUN /root/.cargo/bin/uv venv /opt/python/cp311 && \
+    /root/.cargo/bin/uv pip install --python /opt/python/cp311/bin/python -e .
+
+# Set up the workspace
+WORKDIR /workspaces
+RUN chown -R rstudio:rstudio /workspaces
+
+# Ensure rstudio user can use sudo
+RUN echo "rstudio ALL=(ALL) NOPASSWD:ALL" >> /etc/sudoers
+
+USER rstudio
