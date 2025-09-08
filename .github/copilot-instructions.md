@@ -10,6 +10,8 @@
 
 - The image under `.devcontainer/Containerfile` should be uploaded to the GitHub Container Registry associated with this repository. And thus, all CI created by the repo should use that image.
 
+- For R package installation in this environment, prefer using the bash commands `install2.r --error` and `installGithub.r` rather than `install.packages()` directly in R.
+
 
 ## Examples
 

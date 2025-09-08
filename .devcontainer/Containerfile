@@ -22,13 +22,7 @@ RUN add-apt-repository ppa:deadsnakes/ppa && \
 # Make Python 3.11 available as python
 RUN ln -sf /usr/bin/python3.11 /usr/bin/python
 
-# Install Quarto
-RUN curl -LO https://github.com/quarto-dev/quarto-cli/releases/download/v1.4.550/quarto-1.4.550-linux-amd64.deb && \
-    dpkg -i quarto-1.4.550-linux-amd64.deb && \
-    rm quarto-1.4.550-linux-amd64.deb
-
-# Install essential R packages for epidemiological modeling
-RUN R -e "install.packages(c('devtools', 'remotes', 'here', 'targets', 'tarchetypes', 'visNetwork', 'DT', 'plotly'), repos='https://cran.rstudio.com/')"
+# Note: Quarto is already included in the rocker/tidyverse image
 
 # Copy the pyproject.toml and install Python dependencies using UV
 RUN mkdir -p /tmp/python_setup
