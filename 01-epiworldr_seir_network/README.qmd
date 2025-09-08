@@ -51,23 +51,12 @@ With rates:
 
 ```{r setup, message=FALSE, warning=FALSE}
 # Load required libraries
+library(epiworldR)
 library(ggplot2)
 library(dplyr)
 
-# Note: epiworldR package needs to be installed from GitHub
-# Install with: remotes::install_github("UofUEpiBio/epiworldR")
-# For this example, we'll simulate the epiworldR functionality
-
 # Set seed for reproducibility
 set.seed(42)
-
-# Check if epiworldR is available
-epiworld_available <- requireNamespace("epiworldR", quietly = TRUE)
-
-if (!epiworld_available) {
-  cat("Note: epiworldR package not available. Using simulation for demonstration.\n")
-  cat("To install epiworldR: remotes::install_github('UofUEpiBio/epiworldR')\n\n")
-}
 ```
 
 ```{r model-setup}
@@ -86,11 +75,11 @@ progression_rate <- 1/incubation_period
 target_r0 <- 2.0
 transmission_prob <- target_r0 / (avg_degree * infectious_period)
 
-print(paste("Population size:", n_population))
-print(paste("Average degree:", avg_degree))
-print(paste("Transmission probability:", round(transmission_prob, 4)))
-print(paste("Progression rate (σ):", round(progression_rate, 4)))
-print(paste("Recovery rate (γ):", round(recovery_rate, 4)))
+message("Population size: ", n_population)
+message("Average degree: ", avg_degree)
+message("Transmission probability: ", round(transmission_prob, 4))
+message("Progression rate (σ): ", round(progression_rate, 4))
+message("Recovery rate (γ): ", round(recovery_rate, 4))
 ```
 
 ```{r timing-start}
@@ -99,157 +88,49 @@ start_time <- Sys.time()
 ```
 
 ```{r model-creation}
-if (epiworld_available) {
-  # Create SEIR model using epiworldR
-  library(epiworldR)
-  
-  model <- ModelSEIR(
-    name = "SEIR Network Model",
-    prevalence = initial_infected / n_population,
-    transmission_rate = transmission_prob,
-    incubation_days = incubation_period,
-    recovery_rate = recovery_rate
-  )
-  
-  # Create small-world network
-  small_world_net <- sample_smallworld(
-    size = n_population,
-    nei = avg_degree / 2,
-    p = 0.1
-  )
-  
-  # Add the network to the model
-  model <- add_network(model, small_world_net)
-  agents_from_network(model, small_world_net)
-  
-  # Run the simulation
-  run(model, ndays = simulation_days)
-  
-} else {
-  # Simulate SEIR dynamics for demonstration using a simplified network model
-  cat("Simulating SEIR dynamics (epiworldR not available)\n")
-  
-  # Simplified network representation: adjacency matrix approach
-  # For demonstration, we'll use a probabilistic contact model
-  # that approximates small-world network behavior
-  
-  # Initialize compartments
-  S <- rep(1, n_population)  # Susceptible
-  E <- rep(0, n_population)  # Exposed
-  I <- rep(0, n_population)  # Infectious
-  R <- rep(0, n_population)  # Recovered
-  
-  # Set initial infections
-  initial_cases <- sample(n_population, initial_infected)
-  S[initial_cases] <- 0
-  I[initial_cases] <- 1
-  
-  # Store daily counts
-  daily_S <- numeric(simulation_days + 1)
-  daily_E <- numeric(simulation_days + 1)
-  daily_I <- numeric(simulation_days + 1)
-  daily_R <- numeric(simulation_days + 1)
-  
-  # Initial counts
-  daily_S[1] <- sum(S)
-  daily_E[1] <- sum(E)
-  daily_I[1] <- sum(I)
-  daily_R[1] <- sum(R)
-  
-  # Simulation loop
-  for (day in 2:(simulation_days + 1)) {
-    new_E <- E
-    new_I <- I
-    new_R <- R
-    new_S <- S
-    
-    # Process each individual
-    for (person in 1:n_population) {
-      if (S[person] == 1) {
-        # Susceptible: approximate network-based transmission
-        # In a small-world network, each person has avg_degree contacts
-        # We'll sample contacts and check for infection
-        total_infected <- sum(I)
-        
-        # Probability of contact with an infected individual
-        # This approximates the network structure
-        contact_prob <- min(1, avg_degree * total_infected / n_population)
-        
-        if (runif(1) < contact_prob) {
-          # Had contact with infected, now check transmission
-          if (runif(1) < transmission_prob) {
-            new_S[person] <- 0
-            new_E[person] <- 1
-          }
-        }
-      } else if (E[person] == 1) {
-        # Exposed: check for becoming infectious
-        if (runif(1) < progression_rate) {
-          new_E[person] <- 0
-          new_I[person] <- 1
-        }
-      } else if (I[person] == 1) {
-        # Infectious: check for recovery
-        if (runif(1) < recovery_rate) {
-          new_I[person] <- 0
-          new_R[person] <- 1
-        }
-      }
-    }
-    
-    # Update states
-    S <- new_S
-    E <- new_E
-    I <- new_I
-    R <- new_R
-    
-    # Record daily counts
-    daily_S[day] <- sum(S)
-    daily_E[day] <- sum(E)
-    daily_I[day] <- sum(I)
-    daily_R[day] <- sum(R)
-    
-    # Stop simulation if no more exposed or infected
-    if (sum(E) + sum(I) == 0) {
-      break
-    }
-  }
-  
-  # Create a data frame similar to epiworldR output
-  epi_data <- data.frame(
-    Date = 0:(length(daily_S) - 1),
-    Susceptible = daily_S[1:length(daily_S)],
-    Exposed = daily_E[1:length(daily_S)],
-    Infected = daily_I[1:length(daily_S)],
-    Recovered = daily_R[1:length(daily_S)]
-  )
-}
+# Create SEIR model using epiworldR
+model <- ModelSEIR(
+  name = "SEIR Network Model",
+  prevalence = initial_infected / n_population,
+  transmission_rate = transmission_prob,
+  incubation_days = incubation_period,
+  recovery_rate = recovery_rate
+)
+
+# Create small-world network
+small_world_net <- sample_smallworld(
+  size = n_population,
+  nei = avg_degree / 2,
+  p = 0.1
+)
+
+# Add the network to the model
+model <- add_network(model, small_world_net)
+agents_from_network(model, small_world_net)
+
+# Run the simulation
+run(model, ndays = simulation_days)
 ```
 
 ```{r timing-end}
 # End timing
 end_time <- Sys.time()
 execution_time <- end_time - start_time
-print(paste("Execution time:", round(execution_time, 2), "seconds"))
+message("Execution time: ", round(execution_time, 2), " seconds")
 ```
 
 ```{r results-summary}
-if (epiworld_available) {
-  # Get simulation results from epiworldR
-  summary(model)
-  epi_data <- plot(model)$data
-} else {
-  # Results already in epi_data from simulation
-  cat("Simulation completed using custom SEIR implementation\n")
-}
+# Get simulation results from epiworldR
+summary(model)
+epi_data <- plot(model)$data
 
 # Calculate final attack rate
 final_data <- tail(epi_data, 1)
 attack_rate <- (final_data$Recovered + final_data$Infected) / n_population * 100
 
-print(paste("Final attack rate:", round(attack_rate, 1), "%"))
-print(paste("Peak infections:", max(epi_data$Infected)))
-print(paste("Peak day:", which.max(epi_data$Infected)))
+message("Final attack rate: ", round(attack_rate, 1), "%")
+message("Peak infections: ", max(epi_data$Infected))
+message("Peak day: ", which.max(epi_data$Infected))
 ```
 
 ```{r visualization}

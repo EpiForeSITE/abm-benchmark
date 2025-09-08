@@ -17,9 +17,8 @@ RUN ln -sf /usr/bin/python3 /usr/bin/python
 # Note: Quarto is already included in the rocker/tidyverse image
 # UV and Python packages will be installed as needed by individual projects or during container runtime
 
-# Note: epiworldR installation from GitHub requires network access
-# and may need to be installed manually in development environments
-# For this example, we use base R packages only for maximum compatibility
+# Install R packages needed for examples
+RUN install2.r --error epiworldR igraph
 
 # Set up the workspace
 WORKDIR /workspaces
