@@ -1,0 +1,35 @@
+{
+  "name": "ABM benchmark",
+  "build": {
+    "dockerfile": "Containerfile"
+  },
+  "features": {
+    "ghcr.io/devcontainers/features/git:1": {},
+    "ghcr.io/devcontainers/features/github-cli:1": {}
+  },
+  "customizations": {
+    "vscode": {
+      "extensions": [
+        "quarto.quarto",
+        "REditorSupport.r",
+        "ms-python.python",
+        "ms-python.black-formatter",
+        "charliermarsh.ruff"
+      ],
+      "settings": {
+        "terminal.integrated.defaultProfile.linux": "bash",
+        "r.rterm.linux": "/usr/local/bin/R",
+        "python.defaultInterpreterPath": "/opt/python/cp311/bin/python"
+      }
+    }
+  },
+  "remoteUser": "rstudio",
+  "postCreateCommand": "sudo chown -R rstudio:rstudio /workspaces",
+  "forwardPorts": [8787],
+  "portsAttributes": {
+    "8787": {
+      "label": "RStudio Server",
+      "onAutoForward": "notify"
+    }
+  }
+}
