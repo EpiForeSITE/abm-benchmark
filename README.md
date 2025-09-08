@@ -25,7 +25,7 @@ XX-modeltype_package/
 
 ### Current Examples
 
-*Examples will be added here as they are contributed to the repository.*
+- **[01-epiworldr_seir_network/](01-epiworldr_seir_network/)** - SEIR network model using epiworldR with small-world network topology
 
 ## 🚀 Getting Started
 
